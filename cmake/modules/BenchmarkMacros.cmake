@@ -204,9 +204,17 @@ function(add_hecbench_benchmark)
             HIP_STANDARD 17
             HIP_ARCHITECTURES ${HECBENCH_HIP_ARCH}
         )
-        target_compile_options(${TARGET_NAME} PRIVATE
-            $<$<COMPILE_LANGUAGE:HIP>:--offload-arch=${HECBENCH_HIP_ARCH}>
-        )
+        # SPIR-V builds set --offload-arch via HECBENCH_HIP_EXTRA_CFLAGS globally;
+        # do not also force gfx* here or clang gets conflicting offload targets.
+        if(NOT HECBENCH_ENABLE_SPIRV)
+            target_compile_options(${TARGET_NAME} PRIVATE
+                $<$<COMPILE_LANGUAGE:HIP>:--offload-arch=${HECBENCH_HIP_ARCH}>
+            )
+        else()
+            # ROCm libhipcxx uses #warning for arch/chrono notes; treat as noise for SPIR-V HIP.
+            target_compile_options(${TARGET_NAME} PRIVATE
+                "$<$<COMPILE_LANGUAGE:HIP>:-Wno-#warnings>")
+        endif()
 
     elseif(BENCH_MODEL_LOWER STREQUAL "sycl")
         # SYCL configuration
